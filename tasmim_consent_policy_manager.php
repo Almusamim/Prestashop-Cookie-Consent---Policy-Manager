@@ -1,9 +1,11 @@
 <?php
 /**
- * Tasmim Policy Installer
+ * Tasmim Consent & Policy Manager
  *
- * Automatically installs policy CMS pages in multiple languages.
- * Reusable across Tasmim themes.
+ * Comprehensive PrestaShop module that:
+ * - Installs policy CMS pages in multiple languages
+ * - Manages GDPR consent messages
+ * - Provides EU-compliant cookie consent banner with Google Consent Mode v2
  *
  * @author Tasmim
  * @license MIT
@@ -15,7 +17,7 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-class Tasmim_Policy_Installer extends Module
+class Tasmim_Consent_Policy_Manager extends Module
 {
     /**
      * Supported language ISO codes
@@ -35,17 +37,17 @@ class Tasmim_Policy_Installer extends Module
 
     public function __construct()
     {
-        $this->name = 'tasmim_policy_installer';
+        $this->name = 'tasmim_consent_policy_manager';
         $this->tab = 'front_office_features';
-        $this->version = '1.0.0';
+        $this->version = '1.1.0';
         $this->author = 'Tasmim';
         $this->need_instance = 0;
         $this->bootstrap = true;
 
         parent::__construct();
 
-        $this->displayName = $this->trans('Tasmim Policy Installer', [], 'Modules.Tasmimpolicyinstaller.Admin');
-        $this->description = $this->trans('Installs policy CMS pages (Privacy Policy, Terms, etc.) in multiple languages.', [], 'Modules.Tasmimpolicyinstaller.Admin');
+        $this->displayName = $this->trans('Tasmim Consent & Policy Manager', [], 'Modules.Tasmimconsentpolicymanager.Admin');
+        $this->description = $this->trans('Manages policy CMS pages, GDPR consent, and EU-compliant cookie consent banner with Google Consent Mode v2.', [], 'Modules.Tasmimconsentpolicymanager.Admin');
         $this->ps_versions_compliancy = ['min' => '8.0.0', 'max' => _PS_VERSION_];
     }
 
@@ -53,7 +55,15 @@ class Tasmim_Policy_Installer extends Module
     {
         return parent::install()
             && $this->registerHook('actionDispatcherAfter')
-            && Configuration::updateValue('TASMIM_POLICY_DELETE_ON_UNINSTALL', false);
+            && $this->registerHook('displayHeader')
+            && $this->registerHook('actionFrontControllerSetMedia')
+            && $this->registerHook('displayBeforeBodyClosingTag')
+            && Configuration::updateValue('TASMIM_POLICY_DELETE_ON_UNINSTALL', false)
+            && Configuration::updateValue('TASMIM_COOKIE_CONSENT_ENABLED', false)
+            && Configuration::updateValue('TASMIM_GCM_ENABLED', true)
+            && Configuration::updateValue('TASMIM_CONSENT_LAYOUT', 'box')
+            && Configuration::updateValue('TASMIM_CONSENT_POSITION', 'bottom-left')
+            && Configuration::updateValue('TASMIM_IFRAMEMANAGER_ENABLED', false);
     }
 
     /**
@@ -78,6 +88,163 @@ class Tasmim_Policy_Installer extends Module
                 $this->reapplyFooterLinkOrder();
             }
         }
+    }
+
+    /**
+     * Hook: Register CSS and JS assets for cookie consent
+     */
+    public function hookActionFrontControllerSetMedia(array $params): void
+    {
+        if (!Configuration::get('TASMIM_COOKIE_CONSENT_ENABLED')) {
+            return;
+        }
+
+        // Register CookieConsent CSS
+        $this->context->controller->registerStylesheet(
+            'tasmim-cookieconsent-css',
+            'modules/' . $this->name . '/views/css/cookieconsent.min.css',
+            ['media' => 'all', 'priority' => 10]
+        );
+
+        // Register CookieConsent JS
+        $this->context->controller->registerJavascript(
+            'tasmim-cookieconsent-js',
+            'modules/' . $this->name . '/views/js/cookieconsent.umd.js',
+            ['position' => 'bottom', 'priority' => 100]
+        );
+
+        // Register IframeManager if enabled
+        if (Configuration::get('TASMIM_IFRAMEMANAGER_ENABLED')) {
+            $this->context->controller->registerStylesheet(
+                'tasmim-iframemanager-css',
+                'modules/' . $this->name . '/views/css/iframemanager.min.css',
+                ['media' => 'all', 'priority' => 11]
+            );
+            $this->context->controller->registerJavascript(
+                'tasmim-iframemanager-js',
+                'modules/' . $this->name . '/views/js/iframemanager.umd.js',
+                ['position' => 'bottom', 'priority' => 101]
+            );
+        }
+    }
+
+    /**
+     * Hook: Output Google Consent Mode v2 defaults in header
+     * This MUST run before any tracking scripts (GA, FB Pixel, etc.)
+     */
+    public function hookDisplayHeader(array $params): string
+    {
+        if (!Configuration::get('TASMIM_COOKIE_CONSENT_ENABLED')) {
+            return '';
+        }
+
+        if (!Configuration::get('TASMIM_GCM_ENABLED')) {
+            return '';
+        }
+
+        $this->context->smarty->assign([
+            'gcm_enabled' => true,
+        ]);
+
+        return $this->context->smarty->fetch(
+            $this->getLocalPath() . 'views/templates/front/consent-defaults.tpl'
+        );
+    }
+
+    /**
+     * Hook: Output cookie consent banner initialization before body closing tag
+     */
+    public function hookDisplayBeforeBodyClosingTag(array $params): string
+    {
+        if (!Configuration::get('TASMIM_COOKIE_CONSENT_ENABLED')) {
+            return '';
+        }
+
+        $cookiePolicyCmsId = (int) Configuration::get('TASMIM_COOKIE_POLICY_CMS_ID');
+        $cookiePolicyUrl = '';
+        if ($cookiePolicyCmsId) {
+            $cookiePolicyUrl = $this->context->link->getCMSLink($cookiePolicyCmsId);
+        }
+
+        $cookieConsentData = $this->getCookieConsentData();
+
+        $this->context->smarty->assign([
+            'cookie_consent_config' => $this->getCookieConsentConfig(),
+            'cookie_consent_translations' => $this->getCookieConsentTranslations(),
+            'cookie_table_data' => $this->getCookieTableData(),
+            'cookie_consent_data' => $cookieConsentData,
+            'cookie_policy_url' => $cookiePolicyUrl,
+            'current_lang' => $this->context->language->iso_code,
+            'gcm_enabled' => (bool) Configuration::get('TASMIM_GCM_ENABLED'),
+            'iframemanager_enabled' => (bool) Configuration::get('TASMIM_IFRAMEMANAGER_ENABLED'),
+        ]);
+
+        return $this->context->smarty->fetch(
+            $this->getLocalPath() . 'views/templates/front/cookie-consent-config.tpl'
+        );
+    }
+
+    /**
+     * Get cookie consent configuration
+     */
+    private function getCookieConsentConfig(): array
+    {
+        return [
+            'enabled' => (bool) Configuration::get('TASMIM_COOKIE_CONSENT_ENABLED'),
+            'gcm_enabled' => (bool) Configuration::get('TASMIM_GCM_ENABLED'),
+            'layout' => Configuration::get('TASMIM_CONSENT_LAYOUT') ?: 'box',
+            'position' => Configuration::get('TASMIM_CONSENT_POSITION') ?: 'bottom-left',
+            'cookie_policy_cms_id' => (int) Configuration::get('TASMIM_COOKIE_POLICY_CMS_ID'),
+            'iframemanager_enabled' => (bool) Configuration::get('TASMIM_IFRAMEMANAGER_ENABLED'),
+        ];
+    }
+
+    /**
+     * Get cookie consent translations (merged with defaults)
+     */
+    private function getCookieConsentTranslations(): array
+    {
+        $defaults = $this->getCookieConsentData();
+        $customTranslations = Configuration::get('TASMIM_CONSENT_TRANSLATIONS');
+
+        if ($customTranslations) {
+            $custom = json_decode($customTranslations, true);
+            if (is_array($custom)) {
+                return array_replace_recursive($defaults['translations'] ?? [], $custom);
+            }
+        }
+
+        return $defaults['translations'] ?? [];
+    }
+
+    /**
+     * Get cookie table data for preferences modal
+     */
+    private function getCookieTableData(): array
+    {
+        $defaults = $this->getCookieConsentData();
+        $customTable = Configuration::get('TASMIM_COOKIE_TABLE');
+
+        if ($customTable) {
+            $custom = json_decode($customTable, true);
+            if (is_array($custom)) {
+                return array_replace_recursive($defaults['cookie_table'] ?? [], $custom);
+            }
+        }
+
+        return $defaults['cookie_table'] ?? [];
+    }
+
+    /**
+     * Get cookie consent default data from data file
+     */
+    private function getCookieConsentData(): array
+    {
+        $dataFile = $this->getLocalPath() . 'data/cookie_consent.php';
+        if (file_exists($dataFile)) {
+            return include $dataFile;
+        }
+        return [];
     }
 
     /**
@@ -120,6 +287,17 @@ class Tasmim_Policy_Installer extends Module
             Configuration::deleteByName('TASMIM_BACKUP_' . strtoupper($slug));
         }
 
+        // Clean up cookie consent configuration
+        Configuration::deleteByName('TASMIM_COOKIE_CONSENT_ENABLED');
+        Configuration::deleteByName('TASMIM_GCM_ENABLED');
+        Configuration::deleteByName('TASMIM_CONSENT_LAYOUT');
+        Configuration::deleteByName('TASMIM_CONSENT_POSITION');
+        Configuration::deleteByName('TASMIM_COOKIE_POLICY_CMS_ID');
+        Configuration::deleteByName('TASMIM_IFRAMEMANAGER_ENABLED');
+        Configuration::deleteByName('TASMIM_CONSENT_CATEGORIES');
+        Configuration::deleteByName('TASMIM_COOKIE_TABLE');
+        Configuration::deleteByName('TASMIM_CONSENT_TRANSLATIONS');
+
         return parent::uninstall();
     }
 
@@ -143,9 +321,11 @@ class Tasmim_Policy_Installer extends Module
             $output .= $this->processAddFooterLinks();
         } elseif (Tools::isSubmit('submitSaveSettings')) {
             Configuration::updateValue('TASMIM_POLICY_DELETE_ON_UNINSTALL', (bool) Tools::getValue('delete_on_uninstall'));
-            $output .= $this->displayConfirmation($this->trans('Settings saved.', [], 'Modules.Tasmimpolicyinstaller.Admin'));
+            $output .= $this->displayConfirmation($this->trans('Settings saved.', [], 'Modules.Tasmimconsentpolicymanager.Admin'));
         } elseif (Tools::isSubmit('submitUpdateGdprMessages')) {
             $output .= $this->processUpdateGdprMessages();
+        } elseif (Tools::isSubmit('submitSaveCookieConsent')) {
+            $output .= $this->processSaveCookieConsentSettings();
         }
 
         return $output . $this->renderConfigurationPage();
@@ -164,6 +344,8 @@ class Tasmim_Policy_Installer extends Module
             'placeholder_warnings' => $this->checkPlaceholders(),
             'delete_on_uninstall' => (bool) Configuration::get('TASMIM_POLICY_DELETE_ON_UNINSTALL'),
             'gdpr_status' => $this->getGdprConsentStatus(),
+            'cookie_consent' => $this->getCookieConsentConfig(),
+            'cms_pages' => $this->getAllCmsPages(),
             'token' => Tools::getAdminTokenLite('AdminModules'),
             'configure_link' => $this->context->link->getAdminLink('AdminModules', true, [], ['configure' => $this->name]),
         ]);
@@ -197,13 +379,13 @@ class Tasmim_Policy_Installer extends Module
         $output = '';
         if ($installed > 0) {
             $output .= $this->displayConfirmation(sprintf(
-                $this->trans('%d page(s) created.', [], 'Modules.Tasmimpolicyinstaller.Admin'),
+                $this->trans('%d page(s) created.', [], 'Modules.Tasmimconsentpolicymanager.Admin'),
                 $installed
             ));
         }
         if ($updated > 0) {
             $output .= $this->displayConfirmation(sprintf(
-                $this->trans('%d page(s) updated.', [], 'Modules.Tasmimpolicyinstaller.Admin'),
+                $this->trans('%d page(s) updated.', [], 'Modules.Tasmimconsentpolicymanager.Admin'),
                 $updated
             ));
         }
@@ -221,13 +403,13 @@ class Tasmim_Policy_Installer extends Module
     {
         $pages = $this->getCmsPagesData();
         if (!isset($pages[$slug])) {
-            return $this->displayError($this->trans('Unknown page slug.', [], 'Modules.Tasmimpolicyinstaller.Admin'));
+            return $this->displayError($this->trans('Unknown page slug.', [], 'Modules.Tasmimconsentpolicymanager.Admin'));
         }
 
         try {
             $result = $this->installOrUpdatePage($slug, $pages[$slug], true);
             return $this->displayConfirmation(sprintf(
-                $this->trans('Page "%s" %s successfully.', [], 'Modules.Tasmimpolicyinstaller.Admin'),
+                $this->trans('Page "%s" %s successfully.', [], 'Modules.Tasmimconsentpolicymanager.Admin'),
                 $slug,
                 $result === 'created' ? 'created' : 'reinstalled'
             ));
@@ -243,17 +425,17 @@ class Tasmim_Policy_Installer extends Module
     {
         $backup = Configuration::get('TASMIM_BACKUP_' . strtoupper($slug));
         if (!$backup) {
-            return $this->displayError($this->trans('No backup found for this page.', [], 'Modules.Tasmimpolicyinstaller.Admin'));
+            return $this->displayError($this->trans('No backup found for this page.', [], 'Modules.Tasmimconsentpolicymanager.Admin'));
         }
 
         $backupData = json_decode($backup, true);
         if (!$backupData) {
-            return $this->displayError($this->trans('Invalid backup data.', [], 'Modules.Tasmimpolicyinstaller.Admin'));
+            return $this->displayError($this->trans('Invalid backup data.', [], 'Modules.Tasmimconsentpolicymanager.Admin'));
         }
 
         $cmsId = $this->findCmsPageBySlug($slug);
         if (!$cmsId) {
-            return $this->displayError($this->trans('Page not found.', [], 'Modules.Tasmimpolicyinstaller.Admin'));
+            return $this->displayError($this->trans('Page not found.', [], 'Modules.Tasmimconsentpolicymanager.Admin'));
         }
 
         $cms = new CMS($cmsId);
@@ -264,10 +446,10 @@ class Tasmim_Policy_Installer extends Module
         }
 
         if ($cms->save()) {
-            return $this->displayConfirmation($this->trans('Page restored from backup.', [], 'Modules.Tasmimpolicyinstaller.Admin'));
+            return $this->displayConfirmation($this->trans('Page restored from backup.', [], 'Modules.Tasmimconsentpolicymanager.Admin'));
         }
 
-        return $this->displayError($this->trans('Failed to restore page.', [], 'Modules.Tasmimpolicyinstaller.Admin'));
+        return $this->displayError($this->trans('Failed to restore page.', [], 'Modules.Tasmimconsentpolicymanager.Admin'));
     }
 
     /**
@@ -307,12 +489,12 @@ class Tasmim_Policy_Installer extends Module
 
         if ($result) {
             return $this->displayConfirmation(
-                $this->trans('Footer links updated with correct ordering.', [], 'Modules.Tasmimpolicyinstaller.Admin')
+                $this->trans('Footer links updated with correct ordering.', [], 'Modules.Tasmimconsentpolicymanager.Admin')
             );
         }
 
         return $this->displayError(
-            $this->trans('Failed to update footer links.', [], 'Modules.Tasmimpolicyinstaller.Admin')
+            $this->trans('Failed to update footer links.', [], 'Modules.Tasmimconsentpolicymanager.Admin')
         );
     }
 
@@ -604,14 +786,14 @@ class Tasmim_Policy_Installer extends Module
         // Check if psgdpr module is installed
         if (!Module::isInstalled('psgdpr')) {
             return $this->displayError(
-                $this->trans('The GDPR module (psgdpr) is not installed. Please install it first.', [], 'Modules.Tasmimpolicyinstaller.Admin')
+                $this->trans('The GDPR module (psgdpr) is not installed. Please install it first.', [], 'Modules.Tasmimconsentpolicymanager.Admin')
             );
         }
 
         $gdprData = $this->getGdprConsentData();
         if (empty($gdprData)) {
             return $this->displayError(
-                $this->trans('No GDPR consent data found.', [], 'Modules.Tasmimpolicyinstaller.Admin')
+                $this->trans('No GDPR consent data found.', [], 'Modules.Tasmimconsentpolicymanager.Admin')
             );
         }
 
@@ -673,7 +855,7 @@ class Tasmim_Policy_Installer extends Module
         $output = '';
         if (!empty($updated)) {
             $output .= $this->displayConfirmation(sprintf(
-                $this->trans('GDPR consent messages updated: %s', [], 'Modules.Tasmimpolicyinstaller.Admin'),
+                $this->trans('GDPR consent messages updated: %s', [], 'Modules.Tasmimconsentpolicymanager.Admin'),
                 implode(', ', $updated)
             ));
         }
@@ -850,5 +1032,40 @@ class Tasmim_Policy_Installer extends Module
         }
 
         return $status;
+    }
+
+    /**
+     * Process cookie consent settings form
+     */
+    private function processSaveCookieConsentSettings(): string
+    {
+        Configuration::updateValue('TASMIM_COOKIE_CONSENT_ENABLED', (bool) Tools::getValue('cookie_consent_enabled'));
+        Configuration::updateValue('TASMIM_GCM_ENABLED', (bool) Tools::getValue('gcm_enabled'));
+        Configuration::updateValue('TASMIM_IFRAMEMANAGER_ENABLED', (bool) Tools::getValue('iframemanager_enabled'));
+        Configuration::updateValue('TASMIM_CONSENT_LAYOUT', Tools::getValue('consent_layout', 'box'));
+        Configuration::updateValue('TASMIM_CONSENT_POSITION', Tools::getValue('consent_position', 'bottom-left'));
+        Configuration::updateValue('TASMIM_COOKIE_POLICY_CMS_ID', (int) Tools::getValue('cookie_policy_cms_id'));
+
+        return $this->displayConfirmation(
+            $this->trans('Cookie consent settings saved.', [], 'Modules.Tasmimconsentpolicymanager.Admin')
+        );
+    }
+
+    /**
+     * Get all CMS pages for dropdown selection
+     */
+    private function getAllCmsPages(): array
+    {
+        $langId = (int) $this->context->language->id;
+
+        $sql = new DbQuery();
+        $sql->select('c.id_cms, cl.meta_title');
+        $sql->from('cms', 'c');
+        $sql->innerJoin('cms_lang', 'cl', 'c.id_cms = cl.id_cms AND cl.id_lang = ' . $langId);
+        $sql->innerJoin('cms_shop', 'cs', 'c.id_cms = cs.id_cms AND cs.id_shop = ' . (int) $this->context->shop->id);
+        $sql->where('c.active = 1');
+        $sql->orderBy('cl.meta_title ASC');
+
+        return Db::getInstance()->executeS($sql) ?: [];
     }
 }

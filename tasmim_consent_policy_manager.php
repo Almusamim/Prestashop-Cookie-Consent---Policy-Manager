@@ -28,11 +28,11 @@ class Tasmim_Consent_Policy_Manager extends Module
      * Placeholders to check for validation
      */
     private const PLACEHOLDERS = [
-        '[COMPANY_NAME]',
-        '[ORG_NUMBER]',
-        '[ADDRESS]',
-        '[EMAIL]',
-        '[PHONE]',
+        '[COMPANY_NAME]' => 'TASMIM_PLACEHOLDER_COMPANY_NAME',
+        '[ORG_NUMBER]' => 'TASMIM_PLACEHOLDER_ORG_NUMBER',
+        '[ADDRESS]' => 'TASMIM_PLACEHOLDER_ADDRESS',
+        '[EMAIL]' => 'TASMIM_PLACEHOLDER_EMAIL',
+        '[PHONE]' => 'TASMIM_PLACEHOLDER_PHONE',
     ];
 
     public function __construct()
@@ -63,7 +63,13 @@ class Tasmim_Consent_Policy_Manager extends Module
             && Configuration::updateValue('TASMIM_GCM_ENABLED', true)
             && Configuration::updateValue('TASMIM_CONSENT_LAYOUT', 'box')
             && Configuration::updateValue('TASMIM_CONSENT_POSITION', 'bottom-left')
-            && Configuration::updateValue('TASMIM_IFRAMEMANAGER_ENABLED', false);
+            && Configuration::updateValue('TASMIM_IFRAMEMANAGER_ENABLED', false)
+            // Initialize placeholder values (empty by default)
+            && Configuration::updateValue('TASMIM_PLACEHOLDER_COMPANY_NAME', '')
+            && Configuration::updateValue('TASMIM_PLACEHOLDER_ORG_NUMBER', '')
+            && Configuration::updateValue('TASMIM_PLACEHOLDER_ADDRESS', '')
+            && Configuration::updateValue('TASMIM_PLACEHOLDER_EMAIL', '')
+            && Configuration::updateValue('TASMIM_PLACEHOLDER_PHONE', '');
     }
 
     /**
@@ -319,7 +325,16 @@ class Tasmim_Consent_Policy_Manager extends Module
             $output .= $this->processRestorePage($slug);
         } elseif (Tools::isSubmit('submitAddFooterLinks')) {
             $output .= $this->processAddFooterLinks();
+        } elseif (Tools::isSubmit('submitSavePlaceholders')) {
+            // Save placeholder values only
+            Configuration::updateValue('TASMIM_PLACEHOLDER_COMPANY_NAME', Tools::getValue('placeholder_company_name', ''));
+            Configuration::updateValue('TASMIM_PLACEHOLDER_ORG_NUMBER', Tools::getValue('placeholder_org_number', ''));
+            Configuration::updateValue('TASMIM_PLACEHOLDER_ADDRESS', Tools::getValue('placeholder_address', ''));
+            Configuration::updateValue('TASMIM_PLACEHOLDER_EMAIL', Tools::getValue('placeholder_email', ''));
+            Configuration::updateValue('TASMIM_PLACEHOLDER_PHONE', Tools::getValue('placeholder_phone', ''));
+            $output .= $this->displayConfirmation($this->trans('Company information saved.', [], 'Modules.Tasmimconsentpolicymanager.Admin'));
         } elseif (Tools::isSubmit('submitSaveSettings')) {
+            // Save module settings only
             Configuration::updateValue('TASMIM_POLICY_DELETE_ON_UNINSTALL', (bool) Tools::getValue('delete_on_uninstall'));
             $output .= $this->displayConfirmation($this->trans('Settings saved.', [], 'Modules.Tasmimconsentpolicymanager.Admin'));
         } elseif (Tools::isSubmit('submitUpdateGdprMessages')) {
@@ -342,6 +357,13 @@ class Tasmim_Consent_Policy_Manager extends Module
             'active_languages' => $this->getActiveLanguagesInfo(),
             'supported_languages' => self::SUPPORTED_LANGUAGES,
             'placeholder_warnings' => $this->checkPlaceholders(),
+            'placeholder_values' => [
+                'company_name' => Configuration::get('TASMIM_PLACEHOLDER_COMPANY_NAME') ?: '',
+                'org_number' => Configuration::get('TASMIM_PLACEHOLDER_ORG_NUMBER') ?: '',
+                'address' => Configuration::get('TASMIM_PLACEHOLDER_ADDRESS') ?: '',
+                'email' => Configuration::get('TASMIM_PLACEHOLDER_EMAIL') ?: '',
+                'phone' => Configuration::get('TASMIM_PLACEHOLDER_PHONE') ?: '',
+            ],
             'delete_on_uninstall' => (bool) Configuration::get('TASMIM_POLICY_DELETE_ON_UNINSTALL'),
             'gdpr_status' => $this->getGdprConsentStatus(),
             'cookie_consent' => $this->getCookieConsentConfig(),
@@ -365,7 +387,7 @@ class Tasmim_Consent_Policy_Manager extends Module
 
         foreach ($pages as $slug => $pageData) {
             try {
-                $result = $this->installOrUpdatePage($slug, $pageData);
+                $result = $this->installOrUpdatePage($slug, $pageData, true);
                 if ($result === 'created') {
                     $installed++;
                 } elseif ($result === 'updated') {
@@ -587,10 +609,11 @@ class Tasmim_Consent_Policy_Manager extends Module
 
             // Only update if new or force overwrite
             if ($action === 'created' || $forceOverwrite || empty($cms->content[$langId])) {
-                $cms->meta_title[$langId] = $content['title'];
-                $cms->meta_description[$langId] = $content['meta_desc'] ?? '';
+                // Replace placeholders with configured values
+                $cms->meta_title[$langId] = $this->replacePlaceholders($content['title']);
+                $cms->meta_description[$langId] = $this->replacePlaceholders($content['meta_desc'] ?? '');
                 $cms->meta_keywords[$langId] = $content['meta_keywords'] ?? '';
-                $cms->content[$langId] = $content['html'];
+                $cms->content[$langId] = $this->replacePlaceholders($content['html']);
                 // Use language-specific slug if available, otherwise fall back to main slug
                 $cms->link_rewrite[$langId] = $content['slug'] ?? $slug;
             }
@@ -721,12 +744,42 @@ class Tasmim_Consent_Policy_Manager extends Module
     }
 
     /**
+     * Get configured placeholder values
+     */
+    private function getPlaceholderValues(): array
+    {
+        $values = [];
+        foreach (self::PLACEHOLDERS as $placeholder => $configKey) {
+            $values[$placeholder] = Configuration::get($configKey) ?: '';
+        }
+        return $values;
+    }
+
+    /**
+     * Replace placeholders in content with configured values
+     */
+    private function replacePlaceholders(string $content): string
+    {
+        $placeholderValues = $this->getPlaceholderValues();
+
+        foreach ($placeholderValues as $placeholder => $value) {
+            // Only replace if a value is configured
+            if (!empty($value)) {
+                $content = str_replace($placeholder, $value, $content);
+            }
+        }
+
+        return $content;
+    }
+
+    /**
      * Check for unreplaced placeholders in installed pages
      */
     private function checkPlaceholders(): array
     {
         $warnings = [];
         $pages = $this->getCmsPagesData();
+        $configuredValues = $this->getPlaceholderValues();
 
         foreach (array_keys($pages) as $slug) {
             $cmsId = $this->findCmsPageBySlug($slug);
@@ -739,8 +792,9 @@ class Tasmim_Consent_Policy_Manager extends Module
                 $langId = (int) $lang['id_lang'];
                 $content = $cms->content[$langId] ?? '';
 
-                foreach (self::PLACEHOLDERS as $placeholder) {
-                    if (strpos($content, $placeholder) !== false) {
+                foreach (self::PLACEHOLDERS as $placeholder => $configKey) {
+                    // Only warn if placeholder exists in content AND no value is configured
+                    if (strpos($content, $placeholder) !== false && empty($configuredValues[$placeholder])) {
                         $warnings[] = [
                             'page' => $slug,
                             'language' => $lang['iso_code'],

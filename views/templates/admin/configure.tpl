@@ -131,6 +131,57 @@
 
             <hr>
 
+            {* Company Information (Placeholder Configuration) *}
+            <h4><i class="icon-building"></i> {l s='Company Information' d='Modules.Tasmimconsentpolicymanager.Admin'}</h4>
+            <p class="help-block">{l s='Enter your company details below. These values will replace placeholders when installing CMS pages. Leave empty to keep placeholders in the content.' d='Modules.Tasmimconsentpolicymanager.Admin'}</p>
+
+            <form method="post" action="{$configure_link}" class="form-horizontal">
+                <div class="form-group">
+                    <label class="control-label col-lg-3">{l s='Company Name' d='Modules.Tasmimconsentpolicymanager.Admin'}</label>
+                    <div class="col-lg-6">
+                        <input type="text" name="placeholder_company_name" value="{$placeholder_values.company_name|escape:'html':'UTF-8'}" class="form-control" placeholder="[COMPANY_NAME]">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label col-lg-3">{l s='Organization Number' d='Modules.Tasmimconsentpolicymanager.Admin'}</label>
+                    <div class="col-lg-6">
+                        <input type="text" name="placeholder_org_number" value="{$placeholder_values.org_number|escape:'html':'UTF-8'}" class="form-control" placeholder="[ORG_NUMBER]">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label col-lg-3">{l s='Address' d='Modules.Tasmimconsentpolicymanager.Admin'}</label>
+                    <div class="col-lg-6">
+                        <input type="text" name="placeholder_address" value="{$placeholder_values.address|escape:'html':'UTF-8'}" class="form-control" placeholder="[ADDRESS]">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label col-lg-3">{l s='Email' d='Modules.Tasmimconsentpolicymanager.Admin'}</label>
+                    <div class="col-lg-6">
+                        <input type="email" name="placeholder_email" value="{$placeholder_values.email|escape:'html':'UTF-8'}" class="form-control" placeholder="[EMAIL]">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label col-lg-3">{l s='Phone' d='Modules.Tasmimconsentpolicymanager.Admin'}</label>
+                    <div class="col-lg-6">
+                        <input type="text" name="placeholder_phone" value="{$placeholder_values.phone|escape:'html':'UTF-8'}" class="form-control" placeholder="[PHONE]">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-lg-offset-3 col-lg-6">
+                        <button type="submit" name="submitSavePlaceholders" class="btn btn-default">
+                            <i class="icon-save"></i> {l s='Save Company Info' d='Modules.Tasmimconsentpolicymanager.Admin'}
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <hr>
+
             {* Bulk Actions *}
             <h4><i class="icon-cogs"></i> {l s='Actions' d='Modules.Tasmimconsentpolicymanager.Admin'}</h4>
             <div class="row">
@@ -161,22 +212,7 @@
             {* Info Box *}
             <div class="alert alert-info">
                 <h4>{l s='Demo Content Notice' d='Modules.Tasmimconsentpolicymanager.Admin'}</h4>
-                <p>{l s='The policy pages installed by this module contain demo content with placeholders. Before publishing, you must:' d='Modules.Tasmimconsentpolicymanager.Admin'}</p>
-                <ol>
-                    <li>{l s='Replace all placeholders ([COMPANY_NAME], [EMAIL], etc.) with your actual information' d='Modules.Tasmimconsentpolicymanager.Admin'}</li>
-                    <li>{l s='Have the content reviewed by legal counsel' d='Modules.Tasmimconsentpolicymanager.Admin'}</li>
-                    <li>{l s='Customize the content to match your specific business practices' d='Modules.Tasmimconsentpolicymanager.Admin'}</li>
-                </ol>
-            </div>
-            <div class="alert alert-warning">
-                <h4>{l s='Placeholders to Replace' d='Modules.Tasmimconsentpolicymanager.Admin'}</h4>
-                <ul>
-                    <li><code>[COMPANY_NAME]</code> - {l s='Your company name' d='Modules.Tasmimconsentpolicymanager.Admin'}</li>
-                    <li><code>[ORG_NUMBER]</code> - {l s='Organization/VAT number' d='Modules.Tasmimconsentpolicymanager.Admin'}</li>
-                    <li><code>[ADDRESS]</code> - {l s='Company address' d='Modules.Tasmimconsentpolicymanager.Admin'}</li>
-                    <li><code>[EMAIL]</code> - {l s='Contact email' d='Modules.Tasmimconsentpolicymanager.Admin'}</li>
-                    <li><code>[PHONE]</code> - {l s='Contact phone number' d='Modules.Tasmimconsentpolicymanager.Admin'}</li>
-                </ul>
+                <p>{l s='The policy pages contain demo content. Fill in your company information above, then click "Install/Update All Pages". Have the content reviewed by legal counsel before publishing.' d='Modules.Tasmimconsentpolicymanager.Admin'}</p>
             </div>
         </div>
 
@@ -387,18 +423,25 @@
             <hr>
 
             {* General Settings *}
-            <h4><i class="icon-cog"></i> {l s='Settings' d='Modules.Tasmimconsentpolicymanager.Admin'}</h4>
-            <form method="post" action="{$configure_link}">
+            <h4><i class="icon-cog"></i> {l s='Module Settings' d='Modules.Tasmimconsentpolicymanager.Admin'}</h4>
+            <form method="post" action="{$configure_link}" class="form-horizontal">
                 <div class="form-group">
-                    <label class="control-label">
-                        <input type="checkbox" name="delete_on_uninstall" value="1" {if $delete_on_uninstall}checked{/if}>
-                        {l s='Delete CMS pages when uninstalling module' d='Modules.Tasmimconsentpolicymanager.Admin'}
-                    </label>
-                    <p class="help-block">{l s='If checked, all policy pages created by this module will be deleted when uninstalling. Default: unchecked (keep pages).' d='Modules.Tasmimconsentpolicymanager.Admin'}</p>
+                    <div class="col-lg-offset-3 col-lg-6">
+                        <label class="control-label">
+                            <input type="checkbox" name="delete_on_uninstall" value="1" {if $delete_on_uninstall}checked{/if}>
+                            {l s='Delete CMS pages when uninstalling module' d='Modules.Tasmimconsentpolicymanager.Admin'}
+                        </label>
+                        <p class="help-block">{l s='If checked, all policy pages created by this module will be deleted when uninstalling. Default: unchecked (keep pages).' d='Modules.Tasmimconsentpolicymanager.Admin'}</p>
+                    </div>
                 </div>
-                <button type="submit" name="submitSaveSettings" class="btn btn-default">
-                    <i class="icon-save"></i> {l s='Save Settings' d='Modules.Tasmimconsentpolicymanager.Admin'}
-                </button>
+
+                <div class="form-group">
+                    <div class="col-lg-offset-3 col-lg-6">
+                        <button type="submit" name="submitSaveSettings" class="btn btn-primary">
+                            <i class="icon-save"></i> {l s='Save Settings' d='Modules.Tasmimconsentpolicymanager.Admin'}
+                        </button>
+                    </div>
+                </div>
             </form>
         </div>
     </div>
@@ -408,7 +451,7 @@
 {if !empty($placeholder_warnings)}
     <div class="alert alert-warning">
         <h4><i class="icon-warning"></i> {l s='Placeholder Warnings' d='Modules.Tasmimconsentpolicymanager.Admin'}</h4>
-        <p>{l s='The following pages contain unreplaced placeholders. Please edit them in the CMS section:' d='Modules.Tasmimconsentpolicymanager.Admin'}</p>
+        <p>{l s='The following pages contain unreplaced placeholders. Configure your company details in the "CMS Pages" tab, then reinstall the pages to apply the values.' d='Modules.Tasmimconsentpolicymanager.Admin'}</p>
         <ul>
             {foreach from=$placeholder_warnings item=warning}
                 <li>

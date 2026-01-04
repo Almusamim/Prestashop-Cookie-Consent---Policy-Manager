@@ -166,6 +166,7 @@ Policy pages contain demo content with placeholders. Configure in the admin pane
 | `[ADDRESS]` | Company address |
 | `[EMAIL]` | Contact email |
 | `[PHONE]` | Contact phone |
+| `[DATE]` | Policy effective date (e.g., 2024-01-15) |
 
 The module shows warnings in admin if placeholders remain.
 

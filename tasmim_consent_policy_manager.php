@@ -33,6 +33,7 @@ class Tasmim_Consent_Policy_Manager extends Module
         '[ADDRESS]' => 'TASMIM_PLACEHOLDER_ADDRESS',
         '[EMAIL]' => 'TASMIM_PLACEHOLDER_EMAIL',
         '[PHONE]' => 'TASMIM_PLACEHOLDER_PHONE',
+        '[DATE]' => 'TASMIM_PLACEHOLDER_DATE',
     ];
 
     public function __construct()
@@ -332,6 +333,7 @@ class Tasmim_Consent_Policy_Manager extends Module
             Configuration::updateValue('TASMIM_PLACEHOLDER_ADDRESS', Tools::getValue('placeholder_address', ''));
             Configuration::updateValue('TASMIM_PLACEHOLDER_EMAIL', Tools::getValue('placeholder_email', ''));
             Configuration::updateValue('TASMIM_PLACEHOLDER_PHONE', Tools::getValue('placeholder_phone', ''));
+            Configuration::updateValue('TASMIM_PLACEHOLDER_DATE', Tools::getValue('placeholder_date', ''));
             $output .= $this->displayConfirmation($this->trans('Company information saved.', [], 'Modules.Tasmimconsentpolicymanager.Admin'));
         } elseif (Tools::isSubmit('submitSaveSettings')) {
             // Save module settings only
@@ -363,6 +365,7 @@ class Tasmim_Consent_Policy_Manager extends Module
                 'address' => Configuration::get('TASMIM_PLACEHOLDER_ADDRESS') ?: '',
                 'email' => Configuration::get('TASMIM_PLACEHOLDER_EMAIL') ?: '',
                 'phone' => Configuration::get('TASMIM_PLACEHOLDER_PHONE') ?: '',
+                'date' => Configuration::get('TASMIM_PLACEHOLDER_DATE') ?: '',
             ],
             'delete_on_uninstall' => (bool) Configuration::get('TASMIM_POLICY_DELETE_ON_UNINSTALL'),
             'gdpr_status' => $this->getGdprConsentStatus(),
@@ -724,17 +727,40 @@ class Tasmim_Consent_Policy_Manager extends Module
     {
         $pages = $this->getCmsPagesData();
         $languages = Language::getLanguages(true);
+        $defaultLangIso = Language::getIsoById((int) Configuration::get('PS_LANG_DEFAULT'));
         $status = [];
 
-        foreach ($pages as $slug => $pageData) {
-            $cmsId = $this->findCmsPageBySlug($slug);
+        foreach ($pages as $pageKey => $pageData) {
+            $cmsId = $this->findCmsPageBySlug($pageKey);
+
+            // Get slugs for active languages
+            $slugs = [];
+            $displaySlug = $pageKey; // Fallback to page key
+            foreach ($languages as $lang) {
+                $iso = $lang['iso_code'];
+                if (isset($pageData['content'][$iso]['slug'])) {
+                    $slugs[$iso] = $pageData['content'][$iso]['slug'];
+                    // Use default language slug for display, or first available
+                    if ($iso === $defaultLangIso || $displaySlug === $pageKey) {
+                        $displaySlug = $pageData['content'][$iso]['slug'];
+                    }
+                }
+            }
+
+            // Get title from default language or English
+            $title = $pageData['content'][$defaultLangIso]['title']
+                ?? $pageData['content']['en']['title']
+                ?? $pageKey;
+
             $pageStatus = [
-                'slug' => $slug,
-                'title' => $pageData['content']['en']['title'] ?? $slug,
+                'page_key' => $pageKey,
+                'slug' => $displaySlug,
+                'slugs' => $slugs,
+                'title' => $title,
                 'exists' => (bool) $cmsId,
                 'cms_id' => $cmsId,
                 'languages' => [],
-                'has_backup' => (bool) Configuration::get('TASMIM_BACKUP_' . strtoupper($slug)),
+                'has_backup' => (bool) Configuration::get('TASMIM_BACKUP_' . strtoupper($pageKey)),
             ];
 
             if ($cmsId) {
@@ -745,7 +771,7 @@ class Tasmim_Consent_Policy_Manager extends Module
                 }
             }
 
-            $status[$slug] = $pageStatus;
+            $status[$pageKey] = $pageStatus;
         }
 
         return $status;

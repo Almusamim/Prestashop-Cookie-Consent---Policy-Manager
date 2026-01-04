@@ -89,7 +89,16 @@
                     {foreach from=$pages_status key=slug item=page}
                         <tr>
                             <td>{$page.title}</td>
-                            <td><code>{$page.slug}</code></td>
+                            <td>
+                                {if count($page.slugs) > 1}
+                                    {* Multiple slugs - show all with language prefix *}
+                                    {foreach from=$page.slugs key=iso item=slug}
+                                        <div><small class="text-muted">{$iso}:</small> <code>{$slug}</code></div>
+                                    {/foreach}
+                                {else}
+                                    <code>{$page.slug}</code>
+                                {/if}
+                            </td>
                             <td>
                                 {if $page.exists}
                                     <span class="badge badge-success">{l s='Installed' d='Modules.Tasmimconsentpolicymanager.Admin'}</span>
@@ -110,14 +119,14 @@
                             </td>
                             <td>
                                 <form method="post" action="{$configure_link}" style="display: inline;">
-                                    <input type="hidden" name="page_slug" value="{$page.slug}">
+                                    <input type="hidden" name="page_slug" value="{$page.page_key}">
                                     <button type="submit" name="submitInstallSinglePage" class="btn btn-sm btn-default" title="{l s='Reinstall this page' d='Modules.Tasmimconsentpolicymanager.Admin'}">
                                         <i class="icon-refresh"></i> {if $page.exists}{l s='Reinstall' d='Modules.Tasmimconsentpolicymanager.Admin'}{else}{l s='Install' d='Modules.Tasmimconsentpolicymanager.Admin'}{/if}
                                     </button>
                                 </form>
                                 {if $page.has_backup}
                                     <form method="post" action="{$configure_link}" style="display: inline;">
-                                        <input type="hidden" name="page_slug" value="{$page.slug}">
+                                        <input type="hidden" name="page_slug" value="{$page.page_key}">
                                         <button type="submit" name="submitRestorePage" class="btn btn-sm btn-warning" title="{l s='Restore from backup' d='Modules.Tasmimconsentpolicymanager.Admin'}">
                                             <i class="icon-undo"></i> {l s='Restore' d='Modules.Tasmimconsentpolicymanager.Admin'}
                                         </button>
@@ -168,6 +177,14 @@
                     <label class="control-label col-lg-3">{l s='Phone' d='Modules.Tasmimconsentpolicymanager.Admin'}</label>
                     <div class="col-lg-6">
                         <input type="text" name="placeholder_phone" value="{$placeholder_values.phone|escape:'html':'UTF-8'}" class="form-control" placeholder="[PHONE]">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label col-lg-3">{l s='Effective Date' d='Modules.Tasmimconsentpolicymanager.Admin'}</label>
+                    <div class="col-lg-6">
+                        <input type="text" name="placeholder_date" value="{$placeholder_values.date|escape:'html':'UTF-8'}" class="form-control" placeholder="[DATE] - e.g. 2024-01-15">
+                        <p class="help-block">{l s='The date when policies become effective (used in policy pages).' d='Modules.Tasmimconsentpolicymanager.Admin'}</p>
                     </div>
                 </div>
 

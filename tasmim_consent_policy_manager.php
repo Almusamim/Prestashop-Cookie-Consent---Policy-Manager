@@ -635,15 +635,43 @@ class Tasmim_Consent_Policy_Manager extends Module
     }
 
     /**
-     * Find CMS page ID by link_rewrite slug
+     * Get all possible slugs for a page (from all supported languages)
      */
-    private function findCmsPageBySlug(string $slug): ?int
+    private function getAllSlugsForPage(string $pageKey): array
     {
+        $pages = $this->getCmsPagesData();
+        if (!isset($pages[$pageKey])) {
+            return [$pageKey]; // Fallback to page key itself
+        }
+
+        $slugs = [];
+        foreach ($pages[$pageKey]['content'] as $langIso => $content) {
+            if (!empty($content['slug'])) {
+                $slugs[] = $content['slug'];
+            }
+        }
+
+        return array_unique($slugs);
+    }
+
+    /**
+     * Find CMS page ID by page key (searches all language slugs)
+     */
+    private function findCmsPageBySlug(string $pageKey): ?int
+    {
+        $slugs = $this->getAllSlugsForPage($pageKey);
+
+        // Build SQL to search for any of the slugs
+        $slugConditions = [];
+        foreach ($slugs as $slug) {
+            $slugConditions[] = 'cl.link_rewrite = \'' . pSQL($slug) . '\'';
+        }
+
         $sql = new DbQuery();
         $sql->select('c.id_cms');
         $sql->from('cms', 'c');
         $sql->innerJoin('cms_lang', 'cl', 'c.id_cms = cl.id_cms');
-        $sql->where('cl.link_rewrite = \'' . pSQL($slug) . '\'');
+        $sql->where('(' . implode(' OR ', $slugConditions) . ')');
         $sql->groupBy('c.id_cms');
 
         $result = Db::getInstance()->getValue($sql);

@@ -157,7 +157,7 @@ When enabled, replace iframe `src` with `data-src` and add `data-service`:
 
 ## Placeholders
 
-Policy pages contain demo content with placeholders. Replace before publishing:
+Policy pages contain demo content with placeholders. Configure in the admin panel or replace manually:
 
 | Placeholder | Description |
 |-------------|-------------|
@@ -168,6 +168,16 @@ Policy pages contain demo content with placeholders. Replace before publishing:
 | `[PHONE]` | Contact phone |
 
 The module shows warnings in admin if placeholders remain.
+
+### Dynamic Placeholders
+
+The Delivery page uses a special placeholder that is automatically populated:
+
+| Placeholder | Description |
+|-------------|-------------|
+| `[DELIVERY_CARRIERS]` | Generates a table of active carriers from PrestaShop |
+
+When installing/updating the Delivery page, the `[DELIVERY_CARRIERS]` placeholder is replaced with a table showing all active carriers configured in your PrestaShop store, including their names and delivery times.
 
 ## Adding New Languages
 

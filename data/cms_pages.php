@@ -578,48 +578,10 @@ HTML,
     <h2>Leveransalternativ</h2>
     <p>Vi erbjuder flera leveransalternativ för att passa dina behov:</p>
 
-    <h3>Hemleverans</h3>
-    <ul>
-        <li><strong>Standard:</strong> 2-5 arbetsdagar</li>
-        <li><strong>Express:</strong> 1-2 arbetsdagar</li>
-    </ul>
-
-    <h3>Utlämningsställe</h3>
-    <ul>
-        <li><strong>PostNord:</strong> 2-4 arbetsdagar</li>
-        <li><strong>DHL ServicePoint:</strong> 2-4 arbetsdagar</li>
-    </ul>
-
-    <h2>Fraktkostnader</h2>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Leveranssätt</th>
-                <th>Kostnad</th>
-                <th>Fri frakt</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Standard hemleverans</td>
-                <td>49 kr</td>
-                <td>Över 499 kr</td>
-            </tr>
-            <tr>
-                <td>Express hemleverans</td>
-                <td>99 kr</td>
-                <td>Över 999 kr</td>
-            </tr>
-            <tr>
-                <td>Utlämningsställe</td>
-                <td>39 kr</td>
-                <td>Över 399 kr</td>
-            </tr>
-        </tbody>
-    </table>
+    [DELIVERY_CARRIERS]
 
     <h2>Spårning</h2>
-    <p>När din order skickats får du ett e-postmeddelande med spårningsnummer.</p>
+    <p>När din order skickats får du ett e-postmeddelande med spårningsnummer så att du kan följa din leverans.</p>
 
     <h2>Leverans utanför Sverige</h2>
     <p>Vi levererar till hela EU. Kontakta oss för mer information om internationell frakt.</p>
@@ -638,45 +600,7 @@ HTML,
     <h2>Delivery Options</h2>
     <p>We offer several delivery options to suit your needs:</p>
 
-    <h3>Home Delivery</h3>
-    <ul>
-        <li><strong>Standard:</strong> 2-5 business days</li>
-        <li><strong>Express:</strong> 1-2 business days</li>
-    </ul>
-
-    <h3>Pickup Points</h3>
-    <ul>
-        <li><strong>PostNord:</strong> 2-4 business days</li>
-        <li><strong>DHL ServicePoint:</strong> 2-4 business days</li>
-    </ul>
-
-    <h2>Shipping Costs</h2>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Delivery Method</th>
-                <th>Cost</th>
-                <th>Free Shipping</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Standard home delivery</td>
-                <td>€4.90</td>
-                <td>Over €49</td>
-            </tr>
-            <tr>
-                <td>Express home delivery</td>
-                <td>€9.90</td>
-                <td>Over €99</td>
-            </tr>
-            <tr>
-                <td>Pickup point</td>
-                <td>€3.90</td>
-                <td>Over €39</td>
-            </tr>
-        </tbody>
-    </table>
+    [DELIVERY_CARRIERS]
 
     <h2>Tracking</h2>
     <p>When your order is shipped, you will receive an email with tracking information.</p>
@@ -698,45 +622,7 @@ HTML,
     <h2>Leveringsmuligheder</h2>
     <p>Vi tilbyder flere leveringsmuligheder:</p>
 
-    <h3>Hjemmelevering</h3>
-    <ul>
-        <li><strong>Standard:</strong> 2-5 arbejdsdage</li>
-        <li><strong>Express:</strong> 1-2 arbejdsdage</li>
-    </ul>
-
-    <h3>Pakkeshop</h3>
-    <ul>
-        <li><strong>PostNord:</strong> 2-4 arbejdsdage</li>
-        <li><strong>GLS:</strong> 2-4 arbejdsdage</li>
-    </ul>
-
-    <h2>Fragtomkostninger</h2>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Leveringsmetode</th>
-                <th>Pris</th>
-                <th>Gratis fragt</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Standard hjemmelevering</td>
-                <td>39 kr</td>
-                <td>Over 399 kr</td>
-            </tr>
-            <tr>
-                <td>Express hjemmelevering</td>
-                <td>79 kr</td>
-                <td>Over 799 kr</td>
-            </tr>
-            <tr>
-                <td>Pakkeshop</td>
-                <td>29 kr</td>
-                <td>Over 299 kr</td>
-            </tr>
-        </tbody>
-    </table>
+    [DELIVERY_CARRIERS]
 
     <h2>Sporing</h2>
     <p>Når din ordre er afsendt, modtager du en e-mail med sporingsinformation.</p>
@@ -758,45 +644,7 @@ HTML,
     <h2>خيارات التوصيل</h2>
     <p>نقدم عدة خيارات للتوصيل لتناسب احتياجاتك:</p>
 
-    <h3>التوصيل للمنزل</h3>
-    <ul>
-        <li><strong>عادي:</strong> 2-5 أيام عمل</li>
-        <li><strong>سريع:</strong> 1-2 يوم عمل</li>
-    </ul>
-
-    <h3>نقاط الاستلام</h3>
-    <ul>
-        <li><strong>PostNord:</strong> 2-4 أيام عمل</li>
-        <li><strong>DHL:</strong> 2-4 أيام عمل</li>
-    </ul>
-
-    <h2>تكاليف الشحن</h2>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>طريقة التوصيل</th>
-                <th>التكلفة</th>
-                <th>شحن مجاني</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>توصيل منزلي عادي</td>
-                <td>€4.90</td>
-                <td>أكثر من €49</td>
-            </tr>
-            <tr>
-                <td>توصيل منزلي سريع</td>
-                <td>€9.90</td>
-                <td>أكثر من €99</td>
-            </tr>
-            <tr>
-                <td>نقطة استلام</td>
-                <td>€3.90</td>
-                <td>أكثر من €39</td>
-            </tr>
-        </tbody>
-    </table>
+    [DELIVERY_CARRIERS]
 
     <h2>التتبع</h2>
     <p>عند شحن طلبك، ستتلقى بريداً إلكترونياً مع معلومات التتبع.</p>

@@ -609,11 +609,11 @@ class Tasmim_Consent_Policy_Manager extends Module
 
             // Only update if new or force overwrite
             if ($action === 'created' || $forceOverwrite || empty($cms->content[$langId])) {
-                // Replace placeholders with configured values
-                $cms->meta_title[$langId] = $this->replacePlaceholders($content['title']);
-                $cms->meta_description[$langId] = $this->replacePlaceholders($content['meta_desc'] ?? '');
+                // Replace placeholders with configured values (pass language for carrier info)
+                $cms->meta_title[$langId] = $this->replacePlaceholders($content['title'], $isoCode);
+                $cms->meta_description[$langId] = $this->replacePlaceholders($content['meta_desc'] ?? '', $isoCode);
                 $cms->meta_keywords[$langId] = $content['meta_keywords'] ?? '';
-                $cms->content[$langId] = $this->replacePlaceholders($content['html']);
+                $cms->content[$langId] = $this->replacePlaceholders($content['html'], $isoCode);
                 // Use language-specific slug if available, otherwise fall back to main slug
                 $cms->link_rewrite[$langId] = $content['slug'] ?? $slug;
             }
@@ -758,7 +758,7 @@ class Tasmim_Consent_Policy_Manager extends Module
     /**
      * Replace placeholders in content with configured values
      */
-    private function replacePlaceholders(string $content): string
+    private function replacePlaceholders(string $content, string $langIso = 'en'): string
     {
         $placeholderValues = $this->getPlaceholderValues();
 
@@ -769,7 +769,213 @@ class Tasmim_Consent_Policy_Manager extends Module
             }
         }
 
+        // Replace carrier placeholder if present
+        if (strpos($content, '[DELIVERY_CARRIERS]') !== false) {
+            $carriersHtml = $this->getActiveCarriersHtml($langIso);
+            $content = str_replace('[DELIVERY_CARRIERS]', $carriersHtml, $content);
+        }
+
         return $content;
+    }
+
+    /**
+     * Get HTML for active carriers with prices
+     */
+    private function getActiveCarriersHtml(string $langIso = 'en'): string
+    {
+        $langId = Language::getIdByIso($langIso) ?: (int) Configuration::get('PS_LANG_DEFAULT');
+        $carriers = Carrier::getCarriers($langId, true, false, false, null, Carrier::ALL_CARRIERS);
+
+        if (empty($carriers)) {
+            return $this->getCarrierFallbackHtml($langIso);
+        }
+
+        // Get default zone for pricing
+        $defaultZoneId = (int) Configuration::get('PS_COUNTRY_DEFAULT');
+        if ($defaultZoneId) {
+            $country = new Country($defaultZoneId);
+            $zoneId = (int) $country->id_zone;
+        } else {
+            $zoneId = 1; // Default to zone 1
+        }
+
+        // Get free shipping threshold
+        $freeShippingPrice = (float) Configuration::get('PS_SHIPPING_FREE_PRICE');
+
+        // Translations for table headers
+        $translations = [
+            'sv' => [
+                'carrier' => 'Fraktbolag',
+                'delivery_time' => 'Leveranstid',
+                'price' => 'Pris',
+                'free_shipping' => 'Fri frakt',
+                'free' => 'Gratis',
+                'from' => 'Från',
+                'over' => 'över',
+            ],
+            'en' => [
+                'carrier' => 'Carrier',
+                'delivery_time' => 'Delivery Time',
+                'price' => 'Price',
+                'free_shipping' => 'Free Shipping',
+                'free' => 'Free',
+                'from' => 'From',
+                'over' => 'over',
+            ],
+            'da' => [
+                'carrier' => 'Fragtfirma',
+                'delivery_time' => 'Leveringstid',
+                'price' => 'Pris',
+                'free_shipping' => 'Gratis fragt',
+                'free' => 'Gratis',
+                'from' => 'Fra',
+                'over' => 'over',
+            ],
+            'ar' => [
+                'carrier' => 'شركة الشحن',
+                'delivery_time' => 'وقت التوصيل',
+                'price' => 'السعر',
+                'free_shipping' => 'شحن مجاني',
+                'free' => 'مجاني',
+                'from' => 'من',
+                'over' => 'فوق',
+            ],
+        ];
+
+        $t = $translations[$langIso] ?? $translations['en'];
+
+        $html = '<table class="table table-striped">';
+        $html .= '<thead><tr>';
+        $html .= '<th>' . $t['carrier'] . '</th>';
+        $html .= '<th>' . $t['delivery_time'] . '</th>';
+        $html .= '<th>' . $t['price'] . '</th>';
+        if ($freeShippingPrice > 0) {
+            $html .= '<th>' . $t['free_shipping'] . '</th>';
+        }
+        $html .= '</tr></thead>';
+        $html .= '<tbody>';
+
+        $hasActiveCarriers = false;
+        foreach ($carriers as $carrierData) {
+            if (!$carrierData['active']) {
+                continue;
+            }
+
+            $hasActiveCarriers = true;
+            $carrierId = (int) $carrierData['id_carrier'];
+            $carrierObj = new Carrier($carrierId, $langId);
+
+            $name = htmlspecialchars($carrierData['name'], ENT_QUOTES, 'UTF-8');
+            $delay = htmlspecialchars($carrierData['delay'] ?? '', ENT_QUOTES, 'UTF-8');
+
+            // Get price info
+            $priceInfo = $this->getCarrierPriceInfo($carrierObj, $zoneId, $t);
+
+            $html .= '<tr>';
+            $html .= '<td><strong>' . $name . '</strong></td>';
+            $html .= '<td>' . $delay . '</td>';
+            $html .= '<td>' . $priceInfo['price'] . '</td>';
+            if ($freeShippingPrice > 0) {
+                $html .= '<td>' . $t['over'] . ' ' . $this->formatPrice($freeShippingPrice) . '</td>';
+            }
+            $html .= '</tr>';
+        }
+
+        $html .= '</tbody></table>';
+
+        if (!$hasActiveCarriers) {
+            return $this->getCarrierFallbackHtml($langIso);
+        }
+
+        return $html;
+    }
+
+    /**
+     * Get price info for a carrier
+     */
+    private function getCarrierPriceInfo(Carrier $carrier, int $zoneId, array $translations): array
+    {
+        // Check if carrier is free
+        if ($carrier->is_free) {
+            return ['price' => $translations['free']];
+        }
+
+        // Get shipping method (weight or price based)
+        $shippingMethod = $carrier->getShippingMethod();
+
+        // Get minimum price from delivery ranges
+        $minPrice = $this->getCarrierMinPrice($carrier->id, $zoneId, $shippingMethod);
+
+        if ($minPrice !== null) {
+            $formattedPrice = $this->formatPrice($minPrice);
+            return ['price' => $translations['from'] . ' ' . $formattedPrice];
+        }
+
+        return ['price' => '-'];
+    }
+
+    /**
+     * Get minimum delivery price for a carrier in a zone
+     */
+    private function getCarrierMinPrice(int $carrierId, int $zoneId, int $shippingMethod): ?float
+    {
+        $db = Db::getInstance();
+
+        if ($shippingMethod == Carrier::SHIPPING_METHOD_WEIGHT) {
+            // Weight-based pricing
+            $sql = 'SELECT MIN(d.price) as min_price
+                    FROM `' . _DB_PREFIX_ . 'delivery` d
+                    INNER JOIN `' . _DB_PREFIX_ . 'range_weight` rw ON d.id_range_weight = rw.id_range_weight
+                    WHERE d.id_carrier = ' . (int) $carrierId . '
+                    AND d.id_zone = ' . (int) $zoneId;
+        } else {
+            // Price-based pricing
+            $sql = 'SELECT MIN(d.price) as min_price
+                    FROM `' . _DB_PREFIX_ . 'delivery` d
+                    INNER JOIN `' . _DB_PREFIX_ . 'range_price` rp ON d.id_range_price = rp.id_range_price
+                    WHERE d.id_carrier = ' . (int) $carrierId . '
+                    AND d.id_zone = ' . (int) $zoneId;
+        }
+
+        $result = $db->getValue($sql);
+
+        return $result !== false ? (float) $result : null;
+    }
+
+    /**
+     * Format price with currency
+     */
+    private function formatPrice(float $price): string
+    {
+        $context = Context::getContext();
+        $currency = $context->currency;
+        if (!$currency) {
+            $currency = new Currency((int) Configuration::get('PS_CURRENCY_DEFAULT'));
+        }
+
+        // PrestaShop 8+/9+ - use locale formatter
+        $locale = $context->getCurrentLocale();
+        if ($locale) {
+            return $locale->formatPrice($price, $currency->iso_code);
+        }
+
+        // Fallback to manual formatting
+        return number_format($price, 2, '.', ' ') . ' ' . $currency->sign;
+    }
+
+    /**
+     * Get fallback HTML when no carriers are configured
+     */
+    private function getCarrierFallbackHtml(string $langIso): string
+    {
+        $messages = [
+            'sv' => 'Fraktinformation kommer snart. Kontakta oss för mer information.',
+            'en' => 'Shipping information coming soon. Contact us for more details.',
+            'da' => 'Fragtinformation kommer snart. Kontakt os for mere information.',
+            'ar' => 'معلومات الشحن قادمة قريباً. اتصل بنا لمزيد من التفاصيل.',
+        ];
+
+        return '<p><em>' . ($messages[$langIso] ?? $messages['en']) . '</em></p>';
     }
 
     /**

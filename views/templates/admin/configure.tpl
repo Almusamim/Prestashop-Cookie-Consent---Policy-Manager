@@ -161,6 +161,77 @@
     </div>
 </div>
 
+{* GDPR Consent Messages *}
+<div class="panel">
+    <div class="panel-heading">
+        <i class="icon-shield"></i> {l s='GDPR Consent Messages' d='Modules.Tasmimpolicyinstaller.Admin'}
+    </div>
+    <div class="panel-body">
+        {if !$gdpr_status.psgdpr_installed}
+            <div class="alert alert-warning">
+                <i class="icon-warning"></i>
+                {l s='The Official GDPR Compliance module (psgdpr) is not installed. Please install it first to use this feature.' d='Modules.Tasmimpolicyinstaller.Admin'}
+            </div>
+        {else}
+            <p>{l s='Update consent checkbox messages for all GDPR-related forms in all active languages.' d='Modules.Tasmimpolicyinstaller.Admin'}</p>
+
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>{l s='Form' d='Modules.Tasmimpolicyinstaller.Admin'}</th>
+                        <th>{l s='Status' d='Modules.Tasmimpolicyinstaller.Admin'}</th>
+                        <th>{l s='Languages' d='Modules.Tasmimpolicyinstaller.Admin'}</th>
+                        <th>{l s='Data Available' d='Modules.Tasmimpolicyinstaller.Admin'}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {foreach from=$gdpr_status.consents key=key item=consent}
+                        <tr>
+                            <td>{$consent.label}</td>
+                            <td>
+                                {if isset($consent.module_installed) && !$consent.module_installed}
+                                    <span class="badge badge-secondary">{l s='Module not installed' d='Modules.Tasmimpolicyinstaller.Admin'}</span>
+                                {elseif $consent.active}
+                                    <span class="badge badge-success">{l s='Active' d='Modules.Tasmimpolicyinstaller.Admin'}</span>
+                                {else}
+                                    <span class="badge badge-warning">{l s='Inactive' d='Modules.Tasmimpolicyinstaller.Admin'}</span>
+                                {/if}
+                            </td>
+                            <td>
+                                {foreach from=$consent.languages key=iso item=has_message}
+                                    {if $has_message}
+                                        <span class="badge badge-info">{$iso}</span>
+                                    {/if}
+                                {/foreach}
+                                {if empty($consent.languages|@array_filter)}
+                                    <span class="text-muted">-</span>
+                                {/if}
+                            </td>
+                            <td>
+                                {if $consent.has_data}
+                                    <span class="badge badge-success">{l s='Yes' d='Modules.Tasmimpolicyinstaller.Admin'}</span>
+                                {else}
+                                    <span class="badge badge-secondary">{l s='No' d='Modules.Tasmimpolicyinstaller.Admin'}</span>
+                                {/if}
+                            </td>
+                        </tr>
+                    {/foreach}
+                </tbody>
+            </table>
+
+            <hr>
+            <form method="post" action="{$configure_link}">
+                <button type="submit" name="submitUpdateGdprMessages" class="btn btn-primary">
+                    <i class="icon-refresh"></i> {l s='Update GDPR Consent Messages' d='Modules.Tasmimpolicyinstaller.Admin'}
+                </button>
+                <p class="help-block" style="margin-top: 10px;">
+                    {l s='This will update all consent messages with links to your policy pages. Messages include links to Privacy Policy and Terms & Conditions pages.' d='Modules.Tasmimpolicyinstaller.Admin'}
+                </p>
+            </form>
+        {/if}
+    </div>
+</div>
+
 {* Settings *}
 <div class="panel">
     <div class="panel-heading">

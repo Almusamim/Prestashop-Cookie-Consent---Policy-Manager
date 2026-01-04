@@ -144,6 +144,8 @@ class Tasmim_Policy_Installer extends Module
         } elseif (Tools::isSubmit('submitSaveSettings')) {
             Configuration::updateValue('TASMIM_POLICY_DELETE_ON_UNINSTALL', (bool) Tools::getValue('delete_on_uninstall'));
             $output .= $this->displayConfirmation($this->trans('Settings saved.', [], 'Modules.Tasmimpolicyinstaller.Admin'));
+        } elseif (Tools::isSubmit('submitUpdateGdprMessages')) {
+            $output .= $this->processUpdateGdprMessages();
         }
 
         return $output . $this->renderConfigurationPage();
@@ -161,6 +163,7 @@ class Tasmim_Policy_Installer extends Module
             'supported_languages' => self::SUPPORTED_LANGUAGES,
             'placeholder_warnings' => $this->checkPlaceholders(),
             'delete_on_uninstall' => (bool) Configuration::get('TASMIM_POLICY_DELETE_ON_UNINSTALL'),
+            'gdpr_status' => $this->getGdprConsentStatus(),
             'token' => Tools::getAdminTokenLite('AdminModules'),
             'configure_link' => $this->context->link->getAdminLink('AdminModules', true, [], ['configure' => $this->name]),
         ]);
@@ -579,5 +582,273 @@ class Tasmim_Policy_Installer extends Module
             return include $dataFile;
         }
         return [];
+    }
+
+    /**
+     * Get GDPR consent messages data from data file
+     */
+    private function getGdprConsentData(): array
+    {
+        $dataFile = $this->getLocalPath() . 'data/gdpr_consent.php';
+        if (file_exists($dataFile)) {
+            return include $dataFile;
+        }
+        return [];
+    }
+
+    /**
+     * Process GDPR consent messages update
+     */
+    private function processUpdateGdprMessages(): string
+    {
+        // Check if psgdpr module is installed
+        if (!Module::isInstalled('psgdpr')) {
+            return $this->displayError(
+                $this->trans('The GDPR module (psgdpr) is not installed. Please install it first.', [], 'Modules.Tasmimpolicyinstaller.Admin')
+            );
+        }
+
+        $gdprData = $this->getGdprConsentData();
+        if (empty($gdprData)) {
+            return $this->displayError(
+                $this->trans('No GDPR consent data found.', [], 'Modules.Tasmimpolicyinstaller.Admin')
+            );
+        }
+
+        $languages = Language::getLanguages(true);
+        $errors = [];
+        $updated = [];
+
+        // Update account form consents (stored in Configuration)
+        $accountForms = [
+            'creation_form' => 'PSGDPR_CREATION_FORM',
+            'customer_form' => 'PSGDPR_CUSTOMER_FORM',
+        ];
+
+        foreach ($accountForms as $key => $configKey) {
+            if (!isset($gdprData[$key])) {
+                continue;
+            }
+
+            $values = [];
+            foreach ($languages as $lang) {
+                $isoCode = $lang['iso_code'];
+                $langId = (int) $lang['id_lang'];
+
+                if (isset($gdprData[$key][$isoCode])) {
+                    $values[$langId] = $gdprData[$key][$isoCode];
+                } elseif (isset($gdprData[$key]['en'])) {
+                    $values[$langId] = $gdprData[$key]['en'];
+                }
+            }
+
+            if (!empty($values)) {
+                Configuration::updateValue($configKey, $values);
+                // Enable the consent checkbox
+                Configuration::updateValue($configKey . '_SWITCH', 1);
+                $updated[] = $key;
+            }
+        }
+
+        // Update module-specific consents (stored in psgdpr_consent_lang table)
+        $moduleConsents = [
+            'productcomments' => 'productcomments',
+            'contactform' => 'contactform',
+            'ps_emailalerts' => 'ps_emailalerts',
+        ];
+
+        foreach ($moduleConsents as $key => $moduleName) {
+            if (!isset($gdprData[$key])) {
+                continue;
+            }
+
+            $result = $this->updateModuleConsent($moduleName, $gdprData[$key], $languages);
+            if ($result === true) {
+                $updated[] = $key;
+            } elseif (is_string($result)) {
+                $errors[] = $result;
+            }
+        }
+
+        $output = '';
+        if (!empty($updated)) {
+            $output .= $this->displayConfirmation(sprintf(
+                $this->trans('GDPR consent messages updated: %s', [], 'Modules.Tasmimpolicyinstaller.Admin'),
+                implode(', ', $updated)
+            ));
+        }
+
+        foreach ($errors as $error) {
+            $output .= $this->displayWarning($error);
+        }
+
+        return $output;
+    }
+
+    /**
+     * Update consent message for a specific module
+     */
+    private function updateModuleConsent(string $moduleName, array $messages, array $languages): bool|string
+    {
+        // Get module ID
+        $moduleId = (int) Db::getInstance()->getValue(
+            'SELECT id_module FROM `' . _DB_PREFIX_ . 'module` WHERE name = \'' . pSQL($moduleName) . '\''
+        );
+
+        if (!$moduleId) {
+            return sprintf('Module "%s" not found', $moduleName);
+        }
+
+        // Check if consent entry exists for this module
+        $consentId = (int) Db::getInstance()->getValue(
+            'SELECT id_gdpr_consent FROM `' . _DB_PREFIX_ . 'psgdpr_consent` WHERE id_module = ' . $moduleId
+        );
+
+        if (!$consentId) {
+            // Create consent entry
+            Db::getInstance()->insert('psgdpr_consent', [
+                'id_module' => $moduleId,
+                'active' => 1,
+                'error' => 0,
+                'error_message' => '',
+                'date_add' => date('Y-m-d H:i:s'),
+                'date_upd' => date('Y-m-d H:i:s'),
+            ]);
+            $consentId = (int) Db::getInstance()->Insert_ID();
+        } else {
+            // Ensure consent is active
+            Db::getInstance()->update('psgdpr_consent', [
+                'active' => 1,
+                'date_upd' => date('Y-m-d H:i:s'),
+            ], 'id_gdpr_consent = ' . $consentId);
+        }
+
+        $shopId = (int) $this->context->shop->id;
+
+        // Update messages for each language
+        foreach ($languages as $lang) {
+            $isoCode = $lang['iso_code'];
+            $langId = (int) $lang['id_lang'];
+
+            $message = $messages[$isoCode] ?? $messages['en'] ?? '';
+            if (empty($message)) {
+                continue;
+            }
+
+            // Check if lang entry exists
+            $exists = Db::getInstance()->getValue(
+                'SELECT 1 FROM `' . _DB_PREFIX_ . 'psgdpr_consent_lang`
+                WHERE id_gdpr_consent = ' . $consentId . '
+                AND id_lang = ' . $langId . '
+                AND id_shop = ' . $shopId
+            );
+
+            if ($exists) {
+                Db::getInstance()->update('psgdpr_consent_lang', [
+                    'message' => pSQL($message, true),
+                ], 'id_gdpr_consent = ' . $consentId . ' AND id_lang = ' . $langId . ' AND id_shop = ' . $shopId);
+            } else {
+                Db::getInstance()->insert('psgdpr_consent_lang', [
+                    'id_gdpr_consent' => $consentId,
+                    'id_lang' => $langId,
+                    'id_shop' => $shopId,
+                    'message' => pSQL($message, true),
+                ]);
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Get GDPR consent status for admin display
+     */
+    private function getGdprConsentStatus(): array
+    {
+        $status = [
+            'psgdpr_installed' => Module::isInstalled('psgdpr'),
+            'consents' => [],
+        ];
+
+        if (!$status['psgdpr_installed']) {
+            return $status;
+        }
+
+        $gdprData = $this->getGdprConsentData();
+        $languages = Language::getLanguages(true);
+
+        // Check account forms
+        $accountForms = [
+            'creation_form' => ['config' => 'PSGDPR_CREATION_FORM', 'label' => 'Account Creation Form'],
+            'customer_form' => ['config' => 'PSGDPR_CUSTOMER_FORM', 'label' => 'Customer Account Form'],
+        ];
+
+        foreach ($accountForms as $key => $info) {
+            $active = (bool) Configuration::get($info['config'] . '_SWITCH');
+            $langStatus = [];
+
+            foreach ($languages as $lang) {
+                $langId = (int) $lang['id_lang'];
+                $message = Configuration::get($info['config'], $langId);
+                $langStatus[$lang['iso_code']] = !empty($message);
+            }
+
+            $status['consents'][$key] = [
+                'label' => $info['label'],
+                'active' => $active,
+                'languages' => $langStatus,
+                'has_data' => isset($gdprData[$key]),
+            ];
+        }
+
+        // Check module consents
+        $moduleConsents = [
+            'productcomments' => 'Product Comments',
+            'contactform' => 'Contact Form',
+            'ps_emailalerts' => 'Email Alerts',
+        ];
+
+        $shopId = (int) $this->context->shop->id;
+
+        foreach ($moduleConsents as $moduleName => $label) {
+            $moduleId = (int) Db::getInstance()->getValue(
+                'SELECT id_module FROM `' . _DB_PREFIX_ . 'module` WHERE name = \'' . pSQL($moduleName) . '\''
+            );
+
+            $active = false;
+            $langStatus = [];
+
+            if ($moduleId) {
+                $consent = Db::getInstance()->getRow(
+                    'SELECT * FROM `' . _DB_PREFIX_ . 'psgdpr_consent` WHERE id_module = ' . $moduleId
+                );
+
+                if ($consent) {
+                    $active = (bool) ($consent['active'] ?? false);
+                    $consentId = (int) $consent['id_gdpr_consent'];
+
+                    foreach ($languages as $lang) {
+                        $langId = (int) $lang['id_lang'];
+                        $message = Db::getInstance()->getValue(
+                            'SELECT message FROM `' . _DB_PREFIX_ . 'psgdpr_consent_lang`
+                            WHERE id_gdpr_consent = ' . $consentId . '
+                            AND id_lang = ' . $langId . '
+                            AND id_shop = ' . $shopId
+                        );
+                        $langStatus[$lang['iso_code']] = !empty($message);
+                    }
+                }
+            }
+
+            $status['consents'][$moduleName] = [
+                'label' => $label,
+                'active' => $active,
+                'languages' => $langStatus,
+                'has_data' => isset($gdprData[$moduleName]),
+                'module_installed' => (bool) $moduleId,
+            ];
+        }
+
+        return $status;
     }
 }

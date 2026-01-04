@@ -308,5 +308,25 @@
     {rdelim} else {ldelim}
         initCookieConsent();
     {rdelim}
+
+    // Handle #show-cookie-preferences links (for CMS pages where data-cc is stripped)
+    document.addEventListener('click', function(e) {ldelim}
+        var link = e.target.closest('a[href="#show-cookie-preferences"]');
+        if (link) {ldelim}
+            e.preventDefault();
+            if (typeof CookieConsent !== 'undefined' && CookieConsent.showPreferences) {ldelim}
+                CookieConsent.showPreferences();
+            {rdelim}
+        {rdelim}
+    {rdelim});
+
+    // Also handle if page loads with #show-cookie-preferences hash
+    if (window.location.hash === '#show-cookie-preferences') {ldelim}
+        setTimeout(function() {ldelim}
+            if (typeof CookieConsent !== 'undefined' && CookieConsent.showPreferences) {ldelim}
+                CookieConsent.showPreferences();
+            {rdelim}
+        {rdelim}, 500);
+    {rdelim}
 {rdelim})();
 </script>

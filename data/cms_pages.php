@@ -1203,7 +1203,7 @@ HTML,
     </ul>
 
     <h2>Hantera cookies</h2>
-    <p>Du kan hantera dina cookieinställningar via vår <a href="/sv/content/cookie-samtycke">cookiesamtyckessida</a> eller genom din webbläsares inställningar.</p>
+    <p>Du kan hantera dina cookieinställningar via vår <a href="#show-cookie-preferences">cookiesamtyckessida</a> eller genom din webbläsares inställningar.</p>
 
     <h2>Hur blockerar jag cookies?</h2>
     <p>De flesta webbläsare låter dig blockera cookies via inställningar. Observera att blockering av nödvändiga cookies kan påverka webbplatsens funktionalitet.</p>
@@ -1259,7 +1259,7 @@ HTML,
     </ul>
 
     <h2>Managing cookies</h2>
-    <p>You can manage your cookie settings via our <a href="/en/content/cookie-samtycke">cookie consent page</a> or through your browser settings.</p>
+    <p>You can manage your cookie settings via our <a href="#show-cookie-preferences">cookie consent page</a> or through your browser settings.</p>
 
     <h2>How to block cookies</h2>
     <p>Most browsers allow you to block cookies through settings. Note that blocking necessary cookies may affect website functionality.</p>
@@ -1315,7 +1315,7 @@ HTML,
     </ul>
 
     <h2>Håndtering af cookies</h2>
-    <p>Du kan håndtere dine cookieindstillinger via vores <a href="/da/content/cookie-samtycke">cookiesamtykkeside</a> eller gennem din browsers indstillinger.</p>
+    <p>Du kan håndtere dine cookieindstillinger via vores <a href="#show-cookie-preferences">cookiesamtykkeside</a> eller gennem din browsers indstillinger.</p>
 
     <h2>Kontakt</h2>
     <p>Spørgsmål om vores cookiepolitik? <a href="/contact-us">Kontakt os</a>.</p>
@@ -1368,7 +1368,7 @@ HTML,
     </ul>
 
     <h2>إدارة ملفات تعريف الارتباط</h2>
-    <p>يمكنك إدارة إعدادات ملفات تعريف الارتباط عبر <a href="/ar/content/cookie-samtycke">صفحة موافقة ملفات تعريف الارتباط</a> أو من خلال إعدادات متصفحك.</p>
+    <p>يمكنك إدارة إعدادات ملفات تعريف الارتباط عبر <a href="#show-cookie-preferences">صفحة موافقة ملفات تعريف الارتباط</a> أو من خلال إعدادات متصفحك.</p>
 
     <h2>الاتصال</h2>
     <p>أسئلة حول سياسة ملفات تعريف الارتباط؟ <a href="/contact-us">تواصل معنا</a>.</p>
@@ -1380,128 +1380,177 @@ HTML,
 
     // =====================================================================
     // COOKIE CONSENT / COOKIE-SAMTYCKE
+    // Interactive page with cookieconsent library integration
     // =====================================================================
     'cookie-samtycke' => [
         'category' => 1,
         'active' => 1,
         'content' => [
             'sv' => [
-                'title' => 'Cookie-samtycke',
+                'title' => 'Hantera cookies',
                 'slug' => 'cookie-samtycke',
-                'meta_desc' => 'Hantera dina cookie-inställningar.',
+                'meta_desc' => 'Hantera dina cookie-inställningar och se vilka cookies vi använder.',
                 'html' => <<<'HTML'
-<div class="cms-content policy-page">
-    <h2>Hantera cookie-samtycke</h2>
-    <p>På denna sida kan du hantera dina cookie-inställningar för vår webbplats.</p>
+<div class="cms-content policy-page cookie-preferences-page">
+    <p>På denna sida kan du se och hantera dina cookie-inställningar för vår webbplats. Vi använder cookies för att förbättra din upplevelse och tillhandahålla anpassade tjänster i enlighet med GDPR.</p>
 
-    <div class="alert alert-info">
-        <p>Cookie-samtyckesfunktionen hanteras av vår cookie-modul. Om du ser detta meddelande innebär det att cookie-modulen inte är korrekt konfigurerad.</p>
-        <p>Kontakta webbadministratören för att aktivera cookie-samtyckesfunktionen.</p>
-    </div>
-
-    <h2>Om cookies</h2>
-    <p>Vi använder cookies för att:</p>
+    <h2>Ändra dina inställningar</h2>
+    <p>Klicka på knappen nedan för att öppna cookie-inställningarna där du kan:</p>
     <ul>
-        <li>Möjliggöra grundläggande webbplatsfunktioner</li>
-        <li>Komma ihåg dina inställningar</li>
-        <li>Förbättra din användarupplevelse</li>
-        <li>Analysera webbplatsanvändning</li>
+        <li>Se alla cookies som vi använder på webbplatsen</li>
+        <li>Aktivera eller inaktivera cookie-kategorier individuellt</li>
+        <li>Läsa om varje cookies syfte och varaktighet</li>
+        <li>Uppdatera dina inställningar när som helst</li>
     </ul>
 
-    <p>Läs mer i vår fullständiga <a href="/sv/content/cookiepolicy">cookiepolicy</a>.</p>
+    <p style="margin: 20px 0;">
+        <a href="#show-cookie-preferences" class="btn btn-primary" style="padding: 12px 24px; font-size: 16px; display: inline-block; text-decoration: none;">
+            Öppna cookie-inställningar
+        </a>
+    </p>
 
-    <h2>Kontakt</h2>
-    <p>Vid frågor, <a href="/contact-us">kontakta oss</a>.</p>
+    <h2>Om våra cookie-kategorier</h2>
+
+    <h3>Nödvändiga cookies</h3>
+    <p>Dessa cookies är nödvändiga för att webbplatsen ska fungera korrekt. De hanterar grundläggande funktioner som kundvagn, inloggningssessioner och säkerhetsskydd. Dessa cookies kan inte inaktiveras.</p>
+
+    <h3>Funktionella cookies</h3>
+    <p>Funktionella cookies kommer ihåg dina preferenser och inställningar, såsom språkval, valutapreferens och tidigare visade produkter. De förbättrar din användarupplevelse genom att anpassa webbplatsen efter dina behov.</p>
+
+    <h3>Analyscookies</h3>
+    <p>Analyscookies hjälper oss att förstå hur besökare interagerar med vår webbplats. De samlar in anonym data om sidvisningar, användarflöden och navigeringsmönster. Denna information hjälper oss att förbättra vår webbplats och våra tjänster.</p>
+
+    <h3>Reklamcookies</h3>
+    <p>Reklamcookies spårar ditt surfbeteende för att visa dig relevanta annonser på webben. De kan sättas av oss eller av tredjepartsannonsörer som Facebook och Google. Du kan inaktivera dessa när som helst.</p>
+
+    <h2>Läs mer</h2>
+    <p>Läs vår fullständiga cookiepolicy och integritetspolicy för mer information om hur vi hanterar dina uppgifter. Du hittar länkarna i sidfoten.</p>
 </div>
 HTML,
             ],
             'en' => [
-                'title' => 'Cookie Consent',
+                'title' => 'Manage Cookies',
                 'slug' => 'cookie-consent',
-                'meta_desc' => 'Manage your cookie settings.',
+                'meta_desc' => 'Manage your cookie preferences and see which cookies we use.',
                 'html' => <<<'HTML'
-<div class="cms-content policy-page">
-    <h2>Manage Cookie Consent</h2>
-    <p>On this page you can manage your cookie settings for our website.</p>
+<div class="cms-content policy-page cookie-preferences-page">
+    <p>On this page, you can view and manage your cookie consent preferences for our website. We use cookies to enhance your experience and provide personalized services in compliance with GDPR.</p>
 
-    <div class="alert alert-info">
-        <p>The cookie consent functionality is managed by our cookie module. If you see this message, it means the cookie module is not properly configured.</p>
-        <p>Contact the web administrator to enable the cookie consent functionality.</p>
-    </div>
-
-    <h2>About Cookies</h2>
-    <p>We use cookies to:</p>
+    <h2>Adjust Your Settings</h2>
+    <p>Click the button below to open the cookie preferences panel where you can:</p>
     <ul>
-        <li>Enable basic website functionality</li>
-        <li>Remember your settings</li>
-        <li>Improve your user experience</li>
-        <li>Analyze website usage</li>
+        <li>View all cookies we use on this website</li>
+        <li>Enable or disable cookie categories individually</li>
+        <li>Learn about each cookie's purpose and duration</li>
+        <li>Update your preferences at any time</li>
     </ul>
 
-    <p>Read more in our full <a href="/en/content/cookiepolicy">cookie policy</a>.</p>
+    <p style="margin: 20px 0;">
+        <a href="#show-cookie-preferences" class="btn btn-primary" style="padding: 12px 24px; font-size: 16px; display: inline-block; text-decoration: none;">
+            Open Cookie Preferences
+        </a>
+    </p>
 
-    <h2>Contact</h2>
-    <p>For questions, <a href="/contact-us">contact us</a>.</p>
+    <h2>About Our Cookie Categories</h2>
+
+    <h3>Necessary Cookies</h3>
+    <p>These cookies are essential for the website to function properly. They handle basic functions like shopping cart data, login sessions, and security protection. These cookies cannot be disabled.</p>
+
+    <h3>Functional Cookies</h3>
+    <p>Functional cookies remember your preferences and settings, such as language selection, currency preference, and previously viewed products. They enhance your user experience by personalizing the site to your needs.</p>
+
+    <h3>Analytics Cookies</h3>
+    <p>Analytics cookies help us understand how visitors interact with our website. They collect anonymous data about page views, user flows, and navigation patterns. This information helps us improve our site and services.</p>
+
+    <h3>Advertising Cookies</h3>
+    <p>Advertising cookies track your browsing behavior to show you relevant advertisements across the web. They may be set by us or by third-party advertising partners like Facebook and Google. You can disable these at any time.</p>
+
+    <h2>Learn More</h2>
+    <p>Read our full cookie policy and privacy policy for more information about how we handle your data. You can find these links in the footer.</p>
 </div>
 HTML,
             ],
             'da' => [
-                'title' => 'Cookie-samtykke',
+                'title' => 'Administrer cookies',
                 'slug' => 'cookie-samtykke',
-                'meta_desc' => 'Håndter dine cookie-indstillinger.',
+                'meta_desc' => 'Administrer dine cookie-indstillinger og se hvilke cookies vi bruger.',
                 'html' => <<<'HTML'
-<div class="cms-content policy-page">
-    <h2>Håndter cookie-samtykke</h2>
-    <p>På denne side kan du håndtere dine cookie-indstillinger for vores hjemmeside.</p>
+<div class="cms-content policy-page cookie-preferences-page">
+    <p>På denne side kan du se og administrere dine cookie-samtykkeindstillinger for vores hjemmeside. Vi bruger cookies for at forbedre din oplevelse og levere personaliserede tjenester i overensstemmelse med GDPR.</p>
 
-    <div class="alert alert-info">
-        <p>Cookie-samtykkefunktionen håndteres af vores cookie-modul. Hvis du ser denne besked, betyder det at cookie-modulet ikke er korrekt konfigureret.</p>
-        <p>Kontakt webadministratoren for at aktivere cookie-samtykkefunktionen.</p>
-    </div>
-
-    <h2>Om cookies</h2>
-    <p>Vi bruger cookies til at:</p>
+    <h2>Juster dine indstillinger</h2>
+    <p>Klik på knappen nedenfor for at åbne cookie-indstillingerne, hvor du kan:</p>
     <ul>
-        <li>Muliggøre grundlæggende hjemmesidefunktioner</li>
-        <li>Huske dine indstillinger</li>
-        <li>Forbedre din brugeroplevelse</li>
-        <li>Analysere hjemmesidebrug</li>
+        <li>Se alle cookies, vi bruger på denne hjemmeside</li>
+        <li>Aktivere eller deaktivere cookie-kategorier individuelt</li>
+        <li>Læse om hver cookies formål og varighed</li>
+        <li>Opdatere dine indstillinger når som helst</li>
     </ul>
 
-    <p>Læs mere i vores fulde <a href="/da/content/cookiepolicy">cookiepolitik</a>.</p>
+    <p style="margin: 20px 0;">
+        <a href="#show-cookie-preferences" class="btn btn-primary" style="padding: 12px 24px; font-size: 16px; display: inline-block; text-decoration: none;">
+            Åbn cookie-indstillinger
+        </a>
+    </p>
 
-    <h2>Kontakt</h2>
-    <p>Ved spørgsmål, <a href="/contact-us">kontakt os</a>.</p>
+    <h2>Om vores cookie-kategorier</h2>
+
+    <h3>Nødvendige cookies</h3>
+    <p>Disse cookies er essentielle for, at hjemmesiden fungerer korrekt. De håndterer grundlæggende funktioner som indkøbskurvdata, login-sessioner og sikkerhedsbeskyttelse. Disse cookies kan ikke deaktiveres.</p>
+
+    <h3>Funktionelle cookies</h3>
+    <p>Funktionelle cookies husker dine præferencer og indstillinger, såsom sprogvalg, valutapræference og tidligere sete produkter. De forbedrer din brugeroplevelse ved at tilpasse siden til dine behov.</p>
+
+    <h3>Analysecookies</h3>
+    <p>Analysecookies hjælper os med at forstå, hvordan besøgende interagerer med vores hjemmeside. De indsamler anonyme data om sidevisninger, brugerflows og navigationsmønstre. Denne information hjælper os med at forbedre vores side og tjenester.</p>
+
+    <h3>Annoncecookies</h3>
+    <p>Annoncecookies sporer din browsingadfærd for at vise dig relevante annoncer på nettet. De kan sættes af os eller af tredjepartsannoncører som Facebook og Google. Du kan deaktivere disse når som helst.</p>
+
+    <h2>Læs mere</h2>
+    <p>Læs vores fulde cookiepolitik og privatlivspolitik for mere information om, hvordan vi håndterer dine data. Du kan finde linkene i sidefoden.</p>
 </div>
 HTML,
             ],
             'ar' => [
-                'title' => 'موافقة ملفات تعريف الارتباط',
+                'title' => 'إدارة ملفات تعريف الارتباط',
                 'slug' => 'cookie-consent',
-                'meta_desc' => 'إدارة إعدادات ملفات تعريف الارتباط.',
+                'meta_desc' => 'إدارة إعدادات ملفات تعريف الارتباط ومعرفة الملفات التي نستخدمها.',
                 'html' => <<<'HTML'
-<div class="cms-content policy-page" dir="rtl">
-    <h2>إدارة موافقة ملفات تعريف الارتباط</h2>
-    <p>في هذه الصفحة يمكنك إدارة إعدادات ملفات تعريف الارتباط لموقعنا.</p>
+<div class="cms-content policy-page cookie-preferences-page" dir="rtl">
+    <p>في هذه الصفحة، يمكنك عرض وإدارة تفضيلات موافقة ملفات تعريف الارتباط لموقعنا. نستخدم ملفات تعريف الارتباط لتحسين تجربتك وتقديم خدمات مخصصة وفقًا للائحة حماية البيانات العامة (GDPR).</p>
 
-    <div class="alert alert-info">
-        <p>يتم إدارة وظيفة موافقة ملفات تعريف الارتباط بواسطة وحدة ملفات تعريف الارتباط الخاصة بنا. إذا رأيت هذه الرسالة، فهذا يعني أن الوحدة غير مهيأة بشكل صحيح.</p>
-        <p>اتصل بمسؤول الموقع لتفعيل وظيفة موافقة ملفات تعريف الارتباط.</p>
-    </div>
-
-    <h2>حول ملفات تعريف الارتباط</h2>
-    <p>نستخدم ملفات تعريف الارتباط من أجل:</p>
+    <h2>ضبط إعداداتك</h2>
+    <p>انقر على الزر أدناه لفتح لوحة تفضيلات ملفات تعريف الارتباط حيث يمكنك:</p>
     <ul>
-        <li>تمكين وظائف الموقع الأساسية</li>
-        <li>تذكر إعداداتك</li>
-        <li>تحسين تجربة المستخدم</li>
-        <li>تحليل استخدام الموقع</li>
+        <li>عرض جميع ملفات تعريف الارتباط التي نستخدمها على هذا الموقع</li>
+        <li>تمكين أو تعطيل فئات ملفات تعريف الارتباط بشكل فردي</li>
+        <li>التعرف على غرض كل ملف تعريف ارتباط ومدته</li>
+        <li>تحديث تفضيلاتك في أي وقت</li>
     </ul>
 
-    <p>اقرأ المزيد في <a href="/ar/content/cookiepolicy">سياسة ملفات تعريف الارتباط</a> الكاملة.</p>
+    <p style="margin: 20px 0;">
+        <a href="#show-cookie-preferences" class="btn btn-primary" style="padding: 12px 24px; font-size: 16px; display: inline-block; text-decoration: none;">
+            فتح إعدادات ملفات تعريف الارتباط
+        </a>
+    </p>
 
-    <h2>الاتصال</h2>
-    <p>للاستفسارات، <a href="/contact-us">تواصل معنا</a>.</p>
+    <h2>حول فئات ملفات تعريف الارتباط</h2>
+
+    <h3>ملفات تعريف الارتباط الضرورية</h3>
+    <p>هذه الملفات ضرورية لكي يعمل الموقع بشكل صحيح. تتعامل مع الوظائف الأساسية مثل بيانات سلة التسوق وجلسات تسجيل الدخول وحماية الأمان. لا يمكن تعطيل هذه الملفات.</p>
+
+    <h3>ملفات تعريف الارتباط الوظيفية</h3>
+    <p>تتذكر ملفات تعريف الارتباط الوظيفية تفضيلاتك وإعداداتك، مثل اختيار اللغة وتفضيل العملة والمنتجات التي شاهدتها سابقًا. تعمل على تحسين تجربة المستخدم من خلال تخصيص الموقع وفقًا لاحتياجاتك.</p>
+
+    <h3>ملفات تعريف الارتباط التحليلية</h3>
+    <p>تساعدنا ملفات تعريف الارتباط التحليلية على فهم كيفية تفاعل الزوار مع موقعنا. تجمع بيانات مجهولة الهوية حول مشاهدات الصفحات وتدفقات المستخدمين وأنماط التنقل. تساعدنا هذه المعلومات في تحسين موقعنا وخدماتنا.</p>
+
+    <h3>ملفات تعريف الارتباط الإعلانية</h3>
+    <p>تتتبع ملفات تعريف الارتباط الإعلانية سلوك التصفح الخاص بك لعرض إعلانات ذات صلة عبر الويب. قد يتم تعيينها من قبلنا أو من قبل شركاء إعلانات خارجيين مثل Facebook و Google. يمكنك تعطيلها في أي وقت.</p>
+
+    <h2>اقرأ المزيد</h2>
+    <p>اقرأ سياسة ملفات تعريف الارتباط الكاملة وسياسة الخصوصية لمزيد من المعلومات حول كيفية تعاملنا مع بياناتك. يمكنك العثور على الروابط في تذييل الصفحة.</p>
 </div>
 HTML,
             ],
